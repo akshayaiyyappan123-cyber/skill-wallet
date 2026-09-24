@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>EduGenie</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <div class="icon">
+            🎓
+        </div>
+
+        <h1>
+            EduGenie
+        </h1>
+
+        <p>
+            Google Gemini Powered Learning Assistant
+        </p>
+
+    </div>
+
+
+    <!-- MAIN CARD -->
+
+    <div class="card">
+
+
+        <label>
+            Select Learning Task
+        </label>
+
+
+        <select id="task">
+
+            <option value="qa">
+                Question & Answer
+            </option>
+
+            <option value="explain">
+                Explain Topic
+            </option>
+
+            <option value="quiz">
+                Generate Quiz
+            </option>
+
+            <option value="summarize">
+                Summarize
+            </option>
+
+            <option value="learn">
+                Recommend Learning Path
+            </option>
+
+        </select>
+
+
+        <label>
+            Enter your question, topic or text
+        </label>
+
+
+        <textarea
+            id="inputText"
+            placeholder="Example: What is Artificial Intelligence?"
+        ></textarea>
+
+
+        <button
+            id="generateButton"
+            onclick="generateResult()"
+        >
+
+            Generate
+
+        </button>
+
+
+        <div
+            id="loading"
+            class="loading hidden"
+        >
+
+            🤖 EduGenie is thinking...
+
+        </div>
+
+
+        <!-- RESULT -->
+
+        <div
+            id="resultContainer"
+            class="result-container hidden"
+        >
+
+            <h2>
+                Result
+            </h2>
+
+            <div id="result">
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <footer>
+
+        EduGenie - AI Learning Assistant
+
+    </footer>
+
+
+</div>
+
+
+<script>
+
+
+const taskElement =
+    document.getElementById("task");
+
+
+const inputElement =
+    document.getElementById("inputText");
+
+
+const buttonElement =
+    document.getElementById("generateButton");
+
+
+const loadingElement =
+    document.getElementById("loading");
+
+
+const resultContainer =
+    document.getElementById("resultContainer");
+
+
+const resultElement =
+    document.getElementById("result");
+
+
+
+/* ============================================================
+   PLACEHOLDER
+   ============================================================ */
+
+const placeholders = {
+
+    qa:
+        "Example: What is Artificial Intelligence?",
+
+    explain:
+        "Example: Explain photosynthesis in simple words.",
+
+    quiz:
+        "Paste a topic or educational passage here.",
+
+    summarize:
+        "Paste a long paragraph here.",
+
+    learn:
+        "Example: Python Programming"
+
+};
+
+
+
+taskElement.addEventListener(
+    "change",
+    function () {
+
+        inputElement.placeholder =
+            placeholders[
+                taskElement.value
+            ];
+
+    }
+);
+
+
+
+/* ============================================================
+   ESCAPE HTML
+   ============================================================ */
+
+function escapeHTML(text) {
+
+    return String(text)
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+
+/* ============================================================
+   FORMAT TEXT
+   ============================================================ */
+
+function formatText(text) {
+
+    return escapeHTML(text)
+        .replace(
+            /\*\*(.*?)\*\*/g,
+            "<strong>$1</strong>"
+        )
+        .replace(
+            /\n/g,
+            "<br>"
+        );
+
+}
+
+
+
+/* ============================================================
+   GENERATE QUIZ HTML
+   ============================================================ */
+
+function createQuizHTML(quiz) {
+
+    let html = "";
+
+
+    quiz.forEach(
+        function (question, index) {
+
+
+            html += `
+
+                <div
+                    class="quiz-question"
+                    data-answer="${escapeHTML(question.answer)}"
+                >
+
+                    <h3>
+
+                        ${index + 1}.
+                        ${escapeHTML(question.question)}
+
+                    </h3>
+
+
+            `;
+
+
+            question.options.forEach(
+                function (option, optionIndex) {
+
+                    html += `
+
+                        <label class="option">
+
+                            <input
+                                type="radio"
+                                name="question${index}"
+                                value="${escapeHTML(option)}"
+                            >
+
+                            <span>
+
+                                ${String.fromCharCode(
+                                    65 + optionIndex
+                                )}.
+
+                                ${escapeHTML(option)}
+
+                            </span>
+
+                        </label>
+
+                    `;
+
+                }
+            );
+
+
+            html += `
+
+                    <button
+                        class="check-button"
+                        onclick="checkAnswer(this)"
+                    >
+
+                        Check Answer
+
+                    </button>
+
+
+                    <div
+                        class="feedback"
+                    >
+
+                    </div>
+
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    return html;
+
+}
+
+
+
+/* ============================================================
+   CHECK QUIZ ANSWER
+   ============================================================ */
+
+function checkAnswer(button) {
+
+    const questionBox =
+        button.closest(
+            ".quiz-question"
+        );
+
+
+    const selected =
+        questionBox.querySelector(
+            "input:checked"
+        );
+
+
+    const feedback =
+        questionBox.querySelector(
+            ".feedback"
+        );
+
+
+    const correctAnswer =
+        questionBox.dataset.answer;
+
+
+    if (!selected) {
+
+        feedback.innerHTML =
+            "Please select an option.";
+
+        feedback.className =
+            "feedback wrong";
+
+        return;
+
+    }
+
+
+    if (
+        selected.value ===
+        correctAnswer
+    ) {
+
+        feedback.innerHTML =
+            "Correct! 🎉";
+
+        feedback.className =
+            "feedback correct";
+
+    }
+
+    else {
+
+        feedback.innerHTML =
+            "Incorrect. Correct answer: "
+            +
+            escapeHTML(
+                correctAnswer
+            );
+
+        feedback.className =
+            "feedback wrong";
+
+    }
+
+}
+
+
+
+/* ============================================================
+   GENERATE RESULT
+   ============================================================ */
+
+async function generateResult() {
+
+
+    const text =
+        inputElement.value.trim();
+
+
+    if (!text) {
+
+        alert(
+            "Please enter a question, topic or text."
+        );
+
+        inputElement.focus();
+
+        return;
+
+    }
+
+
+    const selectedTask =
+        taskElement.value;
+
+
+    let endpoint;
+
+
+    if (
+        selectedTask ===
+        "learn"
+    ) {
+
+        endpoint =
+            "/learn/recommendations";
+
+    }
+
+    else {
+
+        endpoint =
+            "/" + selectedTask;
+
+    }
+
+
+    buttonElement.disabled =
+        true;
+
+
+    loadingElement.classList.remove(
+        "hidden"
+    );
+
+
+    resultContainer.classList.add(
+        "hidden"
+    );
+
+
+    resultElement.innerHTML =
+        "";
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                endpoint,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            text: text
+                        })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Something went wrong."
+            );
+
+        }
+
+
+        /* QUIZ */
+
+        if (
+            selectedTask ===
+            "quiz"
+        ) {
+
+            resultElement.innerHTML =
+                createQuizHTML(
+                    data.quiz
+                );
+
+        }
+
+
+        /* OTHER MODULES */
+
+        else {
+
+            resultElement.innerHTML =
+
+                `<div class="answer">
+
+                    ${formatText(
+                        data.result
+                    )}
+
+                </div>`;
+
+        }
+
+
+        resultContainer.classList.remove(
+            "hidden"
+        );
+
+
+        resultContainer.scrollIntoView({
+            behavior: "smooth"
+        });
+
+
+    }
+
+
+    catch (error) {
+
+
+        resultElement.innerHTML =
+
+            `<div class="error">
+
+                <strong>Error:</strong>
+
+                <br><br>
+
+                ${escapeHTML(
+                    error.message
+                )}
+
+            </div>`;
+
+
+        resultContainer.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    finally {
+
+        buttonElement.disabled =
+            false;
+
+        loadingElement.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+
+/* ============================================================
+   CTRL + ENTER
+   ============================================================ */
+
+inputElement.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (
+            event.ctrlKey &&
+            event.key === "Enter"
+        ) {
+
+            generateResult();
+
+        }
+
+    }
+);
+
+
+</script>
+
+
+</body>
+
+</html>
