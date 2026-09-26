@@ -1,0 +1,19 @@
+Hello! I am EduGenie, and I am happy to help you learn!
+
+AI stands for Artificial Intelligence.
+
+* Artificial means something made by humans, not by nature.
+* Intelligence means the ability to think, learn, and solve problems.
+
+So, AI is basically computer software or machines that are taught to think and learn almost like a human brain.
+
+Normally, a regular computer program can only do what a human tells it to do, step by step. But with AI, a computer can look at a lot of information, learn from it, and make its own smart decisions.
+
+You probably use AI every day without even knowing it! Here are a few simple examples:
+
+* Voice Assistants: Siri or Alexa listening to your voice and answering your questions.
+* Recommendations: YouTube or Netflix suggesting a new video or movie you might like.
+* Maps: GPS apps finding the fastest route to avoid traffic.
+
+In short, AI is like giving a computer a brain so it can help humans do things faster and easier!
+📄 Download Document
